@@ -18,7 +18,7 @@ def udp_pinger_client():
     num_pings = 10
     rtt_values = []
     lost_packets = 0
-    
+
     for sequence_number in range(1, num_pings + 1):
         send_time = time.time()
         message = f"Ping {sequence_number} {send_time}"
@@ -26,11 +26,19 @@ def udp_pinger_client():
         try:
             # Envia mensagem de ping
             pinger_socket.sendto(message.encode(), (server_name, server_port_pinger))
-            response, server_address = pinger_socket.recvfrom(1024)
-            recv_time = time.time()
-            rtt = recv_time - send_time
-            rtt_values.append(rtt)
             
+            # Captura o tempo logo após o envio
+            start_time = time.time()
+
+            # Espera resposta do servidor
+            response, server_address = pinger_socket.recvfrom(1024)
+
+            recv_time = time.time()
+            # Calcula RTT logo após receber a resposta
+            
+            rtt =  recv_time - start_time# Usando tempo entre envio e resposta
+            rtt_values.append(rtt)
+
             print(f"Resposta do servidor: {response.decode()}")
             print(f"RTT: {rtt:.6f} segundos")
         
@@ -38,11 +46,11 @@ def udp_pinger_client():
             print("Request timed out")
             lost_packets += 1
 
-    # Calcula estatísticas de RTT e perda de pacotes após o término dos pings
+    # Estatísticas de RTT e perda de pacotes
     if rtt_values:
         min_rtt = min(rtt_values)
         max_rtt = max(rtt_values)
-        avg_rtt = sum(rtt_values) / len(rtt_values)
+        avg_rtt = sum(rtt_values) / len(rtt_values) # soma / quantia burro
     else:
         min_rtt = max_rtt = avg_rtt = 0
     
