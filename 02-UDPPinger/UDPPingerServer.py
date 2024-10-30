@@ -17,6 +17,7 @@ heartbeat_socket.bind(('', server_port_heartbeat))
 last_sequence_number = 0
 last_receive_time = None
 lost_packets = 0
+report_interval = 8
 
 print("Servidor pronto para receber pings e heartbeats.")
 
@@ -33,41 +34,51 @@ def pinger_server():
         else:
             print("Ping recebido e ignorado (simulação de perda de pacote).")
 
+# Variáveis globais para controle de pacotes perdidos e contagem de heartbeats
+heartbeat_counter = 0  # Contador de heartbeats recebidos
+report_interval = 10  # Defina o valor X (intervalo para exibir o relatório)
+
 def heartbeat_server():
-    global last_sequence_number, last_receive_time, lost_packets
+    global last_sequence_number, last_receive_time, lost_packets, heartbeat_counter
+    
     while True:
         # Recebe mensagens de heartbeat
         message, client_address = heartbeat_socket.recvfrom(1024)
         sequence_number, send_time = message.decode().split()
-        #separa os 2
-        sequence_number = int(sequence_number) 
+        sequence_number = int(sequence_number)
         send_time = float(send_time)
         
-        time.sleep(0.005)
-
-        # Calcula o RTT
         receive_time = time.time()
         rtt = receive_time - send_time
-
-
 
         # Detecta e conta pacotes perdidos
         if last_sequence_number and sequence_number != last_sequence_number + 1:
             lost_packets += sequence_number - last_sequence_number - 1
             print(f"Pacotes perdidos detectados: {sequence_number - last_sequence_number - 1}")
         
-        # calcula o tempo com o ultimo tempo recebido = tempo de envio - tempo de recebimento
-
-        # Calcula o tempo desde o último heartbeat
+        # Contabiliza o tempo desde o último heartbeat
         if last_receive_time is not None:
             time_since_last_heartbeat = receive_time - last_receive_time
             print(f"Heartbeat recebido - Seq: {sequence_number}, RTT: {rtt:.6f} segundos, Tempo desde o último heartbeat: {time_since_last_heartbeat:.6f} segundos")
         else:
             print(f"Primeiro heartbeat recebido - Seq: {sequence_number}, RTT: {rtt:.6f} segundos")
-        
-        # Atualiza informações para o próximo heartbeat
+
+        # Incrementa o contador de heartbeats
+        heartbeat_counter += 1
+
+        # Exibe relatório a cada X heartbeats e reseta o contador
+        if heartbeat_counter >= report_interval:
+            print("\n*** Relatório de Pacotes Perdidos ***")
+            print(f"Pacotes perdidos até agora: {lost_packets}")
+            print(f"Total de heartbeats recebidos: {heartbeat_counter}\n")
+            heartbeat_counter = 0  # Reseta o contador para o próximo intervalo
+
+        # Atualiza o último número de sequência e tempo de recepção
         last_sequence_number = sequence_number
         last_receive_time = receive_time
+
+
+       
 
 # Executa os servidores de Pinger e Heartbeat simultaneamente
 from threading import Thread

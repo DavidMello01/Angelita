@@ -1,5 +1,6 @@
 import time
 from socket import *
+import random
 
 # Configurações do servidor e do cliente
 server_name = '127.0.0.1'
@@ -69,14 +70,22 @@ def udp_heartbeat_client():
         while True:
             send_time = time.time()
             message = f"{sequence_number} {send_time}"
-            heartbeat_socket.sendto(message.encode(), (server_name, server_port_heartbeat))
-            print(f"Heartbeat enviado - Seq: {sequence_number}")
+            
+            # 20% chance de n mandar
+            if random.randint(0, 10) >= 2:
+                heartbeat_socket.sendto(message.encode(), (server_name, server_port_heartbeat))
+                print(f"Heartbeat enviado - Seq: {sequence_number}")
+            else:
+                print(f"Heartbeat Seq {sequence_number} foi perdido (simulação)")
+
             sequence_number += 1
-            time.sleep(1)  # Envia o próximo heartbeat em 1 segundo
+            time.sleep(1)  
+            
     except KeyboardInterrupt:
         print("Cliente Heartbeat interrompido.")
     finally:
         heartbeat_socket.close()
+
 
 # Executa os clientes de Pinger e Heartbeat simultaneamente
 from threading import Thread
