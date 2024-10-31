@@ -46,7 +46,7 @@ def receive_one_ping(my_socket, ID, timeout):
     time_left = timeout
     while True:
         started_select = time.time()
-        what_ready = select.select([my_socket], [], [], time_left)
+        what_ready = select.select([my_socket], [], [], time_left) 
         how_long_in_select = (time.time() - started_select)
         if what_ready[0] == []:  # Timeout
             return "Request timed out."
@@ -72,19 +72,22 @@ def receive_one_ping(my_socket, ID, timeout):
 def send_one_ping(my_socket, dest_addr, ID):
     my_checksum = 0
     header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, my_checksum, ID, 1)
-    data = struct.pack("d", time.time())
-    
+    data = struct.pack("d", time.time()) 
     my_checksum = checksum(header + data)
+
     header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, socket.htons(my_checksum), ID, 1)
+
     packet = header + data
     my_socket.sendto(packet, (dest_addr, 1))  # AF_INET address must be tuple, not str
 
 def do_one_ping(dest_addr, timeout):
     icmp = socket.getprotobyname("icmp")
-    my_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
-    my_id = os.getpid() & 0xFFFF  # Return the current process id
+    my_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp) #cria o socket - raw = placa de rede
+    my_id = os.getpid() & 0xFFFF  # Retorna o id do processo
+
     send_one_ping(my_socket, dest_addr, my_id)
     delay = receive_one_ping(my_socket, my_id, timeout)
+
     my_socket.close()
     return delay
 
@@ -99,11 +102,11 @@ def ping(host, timeout=1, count=4):
 
     for i in range(count):
         delay = do_one_ping(dest, timeout)
-        if isinstance(delay, str):  # Timeout ou erro
+        if isinstance(delay, str):  # se delay for string, ele retornou msg de erro, ou request ou um codigo de erro
             print(f"Attempt {i + 1}: {delay}")
-        else:  # Ping sucesso
+        else:  
             print(f"Reply from {dest}: time={delay:.2f} ms")
-            delays.append(delay)
+            delays.append(delay) #adiciona o valor de delay numa lista p calcular os rtt
             total_time += delay
             received += 1
         time.sleep(1)
