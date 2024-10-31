@@ -25,24 +25,25 @@ def send_ping(sock, dest_addr, ttl):
     checksum_value = checksum(icmp_packet)
     icmp_packet = struct.pack('bbHHh', ICMP_ECHO_REQUEST, 0, checksum_value, os.getpid() & 0xFFFF, 1)   
     # define ottl
-    sock.setsockopt(socket.IPPROTO_IP, socket.IP_TTL, ttl)    
+    sock.setsockopt(socket.IPPROTO_IP, socket.IP_TTL, ttl)    #define o valor do ttl pro pacote
 
     sock.sendto(icmp_packet, (dest_addr, 1))  #a porta 1 não é relevante pro icmp pq ele n precisa de é independete das portas, mas precisa de um valor p funfar
+    #o segundo parametro(dps da ,) contem o endereco e a porta (1 nesse caso mas e meio irrelevante pro icmp)
 
-def receive_ping(sock, dest_addr, timeout):
+def receive_ping(sock, dest_addr, timeout): #recebe o socket, o ddestino e o timeout
     """Recebe um pacote ICMP e retorna o endereço do roteador, se disponível."""
-    sock.settimeout(timeout)
+    sock.settimeout(timeout) #tempo limite p receber resposta
     try:
         while True: #recebe os pacote icmp
             time_received = time.time()
             packet, addr = sock.recvfrom(1024)
-            return addr[0], time_received 
+            return addr[0], time_received  #caso ele receba um pacote de fato, retorna o ip do roteador e o tempo q levou p responder
     except socket.timeout:
-        return None, None
+        return None, None #se n, none
 
 def traceroute(dest_name, max_ttl=30):
     """Executa o Traceroute até o destino especificado."""
-    dest_addr = socket.gethostbyname(dest_name) #obtem o ip do destino
+    dest_addr = socket.gethostbyname(dest_name) #converte o nome do destino em um IP
     print(f'Traceroute para {dest_name} ({dest_addr}):')
 
     for ttl in range(1, max_ttl + 1): 
@@ -52,15 +53,15 @@ def traceroute(dest_name, max_ttl=30):
             #receive_ping tenta receber a resposta do roteador, ai o retorno dessa funcao tem o ip do roteador q respondeu e o tempo q levou p responder
             if router_ip is not None:
                 rtt = (time.time() - time_received) * 1000  # calcula rtt qnd recebe uma resposta
-                try:
-                    router_name = socket.gethostbyaddr(router_ip)[0]
+                try: 
+                    router_name = socket.gethostbyaddr(router_ip)[0] #tenta obter o nome do roteador
                 except socket.herror: 
                     router_name = "Nome não resolvido" #aq e qnd tem resposta mas os malditos n tem um DNS q associe o IP  de volta a um nome de dominio
                 print(f'{ttl}\t{router_ip} ({router_name})\t{rtt:.2f} ms')
             else:
                 print(f'{ttl}\t*')
 
-            if router_ip == dest_addr:
+            if router_ip == dest_addr: #se o ip do roteador for igual ao ip do destino, o destino foi alcançado
                 print('Destino alcançado!')
                 break
 
